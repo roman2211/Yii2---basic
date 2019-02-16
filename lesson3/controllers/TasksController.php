@@ -8,11 +8,13 @@ use app\models\TasksSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use app\models\tables\Users;
+use yii\helpers\ArrayHelper;
 
 /**
- * TaskController implements the CRUD actions for Tasks model.
+ * TasksController implements the CRUD actions for Tasks model.
  */
-class TaskController extends Controller
+class TasksController extends Controller
 {
     /**
      * {@inheritdoc}
@@ -38,9 +40,12 @@ class TaskController extends Controller
         $searchModel = new TasksSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $users = Users::find()->select(['id','username'])->all();
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'users' => $users,
         ]);
     }
 
@@ -52,8 +57,9 @@ class TaskController extends Controller
      */
     public function actionView($id)
     {
+        $user = Users::find()->select(['username'])->where(['id' => $this->findModel($id)->responsible_id])->one()->username;
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $this->findModel($id), 'user' => $user,
         ]);
     }
 
@@ -65,13 +71,17 @@ class TaskController extends Controller
     public function actionCreate()
     {
         $model = new Tasks();
-
+        
+        $array=Users::find()->select(['id','username'])->all();
+        $newArray = ArrayHelper::map($array, 'id', 'username');
+        
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+            $user = Users::find()->select(['username'])->where(['id' => $model->responsible_id])->one()->username;
+            return $this->redirect(['view', 'id' => $model->id, 'user'=>$user]);
         }
 
         return $this->render('create', [
-            'model' => $model,
+            'model' => $model, 'array' => $newArray,
         ]);
     }
 
@@ -86,12 +96,35 @@ class TaskController extends Controller
     {
         $model = $this->findModel($id);
 
+        $array=Users::find()->select(['id','username'])->all();
+        $newArray = ArrayHelper::map($array, 'id', 'username');       
+
+        
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+            $user = Users::find()->select(['username'])->where(['id' => $model->responsible_id])->one()->username;
+            return $this->redirect(['view', 'id' => $model->id, 'user'=>$user]);
         }
 
         return $this->render('update', [
-            'model' => $model,
+            'model' => $model, 'array' => $newArray
+        ]);
+    }
+
+    public function actionCardUpdate($id)
+    {
+        $model = $this->findModel($id);
+        $array=Users::find()->select(['id','username'])->all();
+        $newArray = ArrayHelper::map($array, 'id', 'username');
+       
+       
+
+       
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            return $this->redirect(['update', 'id' => $model->id, 'array' => $newArray,]);
+        }
+
+        return $this->render('update', [
+            'model' => $model, 'array' => $newArray,
         ]);
     }
 
